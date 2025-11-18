@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  name      String
+  createdAt DateTime          @default(now())
+  accounts  TwitterAccount[]
+  columns   Column[]
+  scheduled ScheduledTweet[]
+  logs      TweetInteractionLog[]
+}
+
+model TwitterAccount {
+  id             String    @id @default(cuid())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  twitterUserId  String
+  screenName     String
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  columns        Column[]
+  scheduled      ScheduledTweet[]
+  logs           TweetInteractionLog[]
+  createdAt      DateTime @default(now())
+}
+
+model Column {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  twitterAccount  TwitterAccount @relation(fields: [twitterAccountId], references: [id], onDelete: Cascade)
+  twitterAccountId String
+  type            ColumnType
+  config          Json
+  positionIndex   Int
+  createdAt       DateTime @default(now())
+}
+
+enum ColumnType {
+  home
+  mentions
+  list
+  search
+  userTimeline
+}
+
+model ScheduledTweet {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  twitterAccount  TwitterAccount @relation(fields: [twitterAccountId], references: [id], onDelete: Cascade)
+  twitterAccountId String
+  text            String
+  threadParts     Json?
+  mediaUrls       Json?
+  scheduledAt     DateTime
+  status          ScheduledStatus @default(pending)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  sentAt          DateTime?
+}
+
+enum ScheduledStatus {
+  pending
+  sent
+  failed
+  canceled
+}
+
+model TweetInteractionLog {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  twitterAccount  TwitterAccount @relation(fields: [twitterAccountId], references: [id], onDelete: Cascade)
+  twitterAccountId String
+  tweetId         String
+  actionType      String
+  createdAt       DateTime @default(now())
+}
