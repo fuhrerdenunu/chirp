@@ -33,19 +33,28 @@ export const createColumn = async (req: AuthRequest, res: Response) => {
 
 export const updateColumn = async (req: AuthRequest, res: Response) => {
   const parsed = columnSchema.partial().parse(req.body);
+  const existing = await prisma.column.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.userId !== req.user!.id) return res.status(404).json({ error: 'Not found' });
   const column = await prisma.column.update({ where: { id: req.params.id }, data: parsed });
   res.json(column);
 };
 
 export const deleteColumn = async (req: AuthRequest, res: Response) => {
+  const existing = await prisma.column.findUnique({ where: { id: req.params.id } });
+  if (!existing || existing.userId !== req.user!.id) return res.status(404).json({ error: 'Not found' });
   await prisma.column.delete({ where: { id: req.params.id } });
   res.status(204).send();
 };
 
 export const reorderColumns = async (req: AuthRequest, res: Response) => {
   const orderedIds = z.array(z.string()).parse(req.body.ids);
+  const userId = req.user!.id;
+  const ownedColumns = await prisma.column.findMany({ where: { id: { in: orderedIds }, userId } });
+  if (ownedColumns.length !== orderedIds.length) return res.status(404).json({ error: 'Not found' });
   await Promise.all(
-    orderedIds.map((id, index) => prisma.column.update({ where: { id }, data: { positionIndex: index } }))
+    orderedIds.map((id, index) =>
+      prisma.column.update({ where: { id }, data: { positionIndex: index } })
+    )
   );
   res.json({ success: true });
 };

@@ -16,6 +16,8 @@ const scheduleSchema = z.object({
 
 export const scheduleTweet = async (req: AuthRequest, res: Response) => {
   const parsed = scheduleSchema.parse(req.body);
+  const account = await prisma.twitterAccount.findUnique({ where: { id: parsed.twitterAccountId } });
+  if (!account || account.userId !== req.user!.id) return res.status(404).json({ error: 'Account not found' });
   const record = await prisma.scheduledTweet.create({
     data: {
       ...parsed,

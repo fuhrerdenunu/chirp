@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { config } from '../utils/config.js';
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ export const authMiddleware = async (
 
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    const decoded = jwt.verify(token, config.jwtSecret) as {
       id: string;
       email: string;
     };
